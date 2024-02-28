@@ -1,81 +1,15 @@
-import streamlit as st
-from Filtros import pagina_filtros, carregar_dados
+
 import pandas as pd
 import plotly.express as px
 import datetime
-
-# Função para criar e atualizar os gráficos
-def criar_grafico(jogadores, anos, site, nick, tamanho_field, intervalo_buyin, dia_semana, mes, tipo_de_torneio, tipo_de_duraçao, tipo_de_intervalo, moeda, rebuy, velocidade, tipo_grafico, dados):    
-    # Filtrar os dados com base nos filtros selecionados
-    dados_filtrados = dados.copy()
-
-    if jogadores:
-        dados_filtrados = dados_filtrados[dados_filtrados['Jogador'].isin(jogadores)]
-    if anos:
-        dados_filtrados = dados_filtrados[dados_filtrados['Ano'].isin(anos)]
-    if site:
-        dados_filtrados = dados_filtrados[dados_filtrados['Site'].isin(site)]
-    if nick:
-        dados_filtrados = dados_filtrados[dados_filtrados['Nickname'].isin(nick)]
-    if tamanho_field:
-        dados_filtrados = dados_filtrados[dados_filtrados['Tamanho do Field'].isin(tamanho_field)]
-    if intervalo_buyin:
-        dados_filtrados = dados_filtrados[dados_filtrados['Intervalo de Buy in'].isin(intervalo_buyin)]
-    if dia_semana:
-        dados_filtrados = dados_filtrados[dados_filtrados['Dia da Semana'].isin(dia_semana)]
-    if mes:
-        dados_filtrados = dados_filtrados[dados_filtrados['Mês'].isin(mes)]
-    if tipo_de_torneio:
-        dados_filtrados = dados_filtrados[dados_filtrados['Tipo de Torneio'].isin(tipo_de_torneio)]
-    if tipo_de_duraçao:
-        dados_filtrados = dados_filtrados[dados_filtrados['Tipo de Duraçao'].isin(tipo_de_duraçao)]
-    if tipo_de_intervalo:
-        dados_filtrados = dados_filtrados[dados_filtrados['Intervalo Horario'].isin(tipo_de_intervalo)]
-    if moeda:
-        dados_filtrados = dados_filtrados[dados_filtrados['Moeda'].isin(moeda)]
-    if rebuy:
-        dados_filtrados = dados_filtrados[dados_filtrados['Rebuys'].isin(rebuy)]
-    if velocidade:
-        dados_filtrados = dados_filtrados[dados_filtrados['Velocidade'].isin(velocidade)]
-
-    # Verificar se há dados para exibir
-    if dados_filtrados.empty:
-        st.warning("Não há dados disponíveis para os filtros selecionados.")
-        return
-
-    # Calcula o lucro acumulado por ano e jogador
-    lucro_por_ano_jogador = dados_filtrados.groupby(['Ano', 'Jogador'])['Profit USD'].sum().reset_index()
-
-    # Plotar o gráfico selecionado
-    fig = None
-    if tipo_grafico == "Gráfico de Linhas":
-        # Recalcula o valor acumulado
-        dados_filtrados = dados_filtrados.sort_values(by='Data')  # Ordenar os dados pela coluna 'Data'
-        dados_filtrados['Profit USD Acumulado'] = dados_filtrados.groupby('Jogador')['Profit USD'].cumsum()  # Calcular o valor acumulado por jogador
-        fig = px.line(dados_filtrados, x='Data', y='Profit USD Acumulado', color='Jogador', title='Lucro acumulado ao longo do tempo')
-    elif tipo_grafico == "Gráfico de Barras":
-        fig = px.bar(lucro_por_ano_jogador, x='Ano', y='Profit USD', color='Jogador', barmode='group', title='Lucro acumulado por ano')
-    elif tipo_grafico == "Gráfico de Pizza":
-        # Filtrar os dados por jogador
-        for jogador_selecionado in jogadores:
-            dados_jogador = lucro_por_ano_jogador[lucro_por_ano_jogador['Jogador'] == jogador_selecionado]
-            fig_jogador = px.pie(dados_jogador, values='Profit USD', names='Ano', title=f'Lucro acumulado por ano para {jogador_selecionado}')
-            st.plotly_chart(fig_jogador)
-    elif tipo_grafico == "Gráfico de Dispersão":
-        dados_filtrados = dados_filtrados.sort_values(by='Data')
-        dados_filtrados['Profit USD Acumulado'] = dados_filtrados.groupby('Jogador')['Profit USD'].cumsum()
-        fig = px.scatter(dados_filtrados, x='Data', y='Profit USD Acumulado', color='Jogador', title='Gráfico de Dispersão')
-    elif tipo_grafico == "Gráfico de Área":
-        dados_filtrados = dados_filtrados.sort_values(by='Data')
-        dados_filtrados['Profit USD Acumulado'] = dados_filtrados.groupby('Jogador')['Profit USD'].cumsum()
-        fig = px.area(dados_filtrados, x='Data', y='Profit USD Acumulado', color='Jogador', title='Gráfico de Área')
-
-
-    # Exibir o gráfico
-    if fig is not None:
-        st.plotly_chart(fig)
-
-
+import streamlit as st
+from Filtros import pagina_filtros, carregar_dados
+from Graficos import criar_grafico
+import plotly.graph_objects as go
+import streamlit.components.v1 as components
+from Graficos_filtro import criar_grafico_filtros
+# Configura a largura da página para ocupar toda a tela
+st.set_page_config(layout="wide")
 # Adicionar logo do CL Poker Team no alto da barra lateral
 st.sidebar.image("logo.jpg", use_column_width=True)
 
@@ -87,8 +21,16 @@ opcao_pagina = st.sidebar.radio("Selecione a página:", options=["Home", "Filtro
 
 # Exibir a página selecionada
 if opcao_pagina == "Home":
-    st.header("Análise de torneios dos jogadores do CL Poker Team")
-    st.subheader("Dashboard de Avelange Jr e Dallastra")
+    # Adicionando emojis
+    emoji_espadas = "♠️"
+    emoji_copas = "♥️"
+    emoji_ouros = "♦️"
+    emoji_paus = "♣️"
+    emoji_trofeu = "🏆"
+    emoji_grafico = "📈"
+    # Títulos com emojis
+    st.header(f"{emoji_espadas}{emoji_copas}{emoji_ouros}{emoji_paus}{emoji_trofeu} Analisando jogadores do CL Team Poker {emoji_espadas}{emoji_copas}{emoji_ouros}{emoji_paus}{emoji_trofeu}")
+    st.subheader(f"{emoji_grafico} Dashboard de Avelange Jr e Dallastra {emoji_grafico}")
     st.write("Informações sobre os jogadores coletadas do Sharkscope")
     st.write("Fonte dos dados : [Sharkscope](https://www.sharkscope.com/)")
     st.write("Desenvolvido por Pedro Eli Bernardes Maciel")
@@ -99,74 +41,167 @@ if opcao_pagina == "Home":
     # Link do LinkedIn com emoji e imagem
     st.markdown("[Perfil no LinkedIn](https://www.linkedin.com/in/pedro-eli-bernardes-maciel-904828296/) <img src='https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Linkedin_icon.svg/1200px-Linkedin_icon.svg.png' alt='LinkedIn' width='20'>", unsafe_allow_html=True)
 
-
 elif opcao_pagina == "Filtros":
-    jogadores, anos, site, nick, tamanho_field, intervalo_buyin, dia_semana, mes, tipo_de_torneio, tipo_de_duraçao, tipo_de_intervalo, moeda, rebuy, velocidade = pagina_filtros()
+    anos, site, nick, tamanho_field, intervalo_buyin, dia_semana, mes, tipo_de_torneio, tipo_de_duraçao, tipo_de_intervalo, moeda, rebuy, velocidade = pagina_filtros()
     dados = carregar_dados()
-
 
     # Definir todas as combinações possíveis de gráficos
     opcoes_graficos = {
-        "Gráfico de Linhas": ("Gráfico de Linhas",),
-        "Gráfico de Barras": ("Gráfico de Barras",),
-        "Gráfico de Pizza": ("Gráfico de Pizza",),
-        "Gráfico de Dispersão": ("Gráfico de Dispersão",),
-        "Gráfico de Área": ("Gráfico de Área",),
-        "Gráfico de Linhas e Barras": ("Gráfico de Linhas", "Gráfico de Barras"),
-        "Gráfico de Linhas e Pizza": ("Gráfico de Linhas", "Gráfico de Pizza"),
-        "Gráfico de Linhas e Dispersão": ("Gráfico de Linhas", "Gráfico de Dispersão"),
-        "Gráfico de Linhas e Área": ("Gráfico de Linhas", "Gráfico de Área"),
-        "Gráfico de Barras e Pizza": ("Gráfico de Barras", "Gráfico de Pizza"),
-        "Gráfico de Barras e Dispersão": ("Gráfico de Barras", "Gráfico de Dispersão"),
-        "Gráfico de Barras e Área": ("Gráfico de Barras", "Gráfico de Área"),
-        "Gráfico de Pizza e Dispersão": ("Gráfico de Pizza", "Gráfico de Dispersão"),
-        "Gráfico de Pizza e Área": ("Gráfico de Pizza", "Gráfico de Área"),
-        "Gráfico de Dispersão e Área": ("Gráfico de Dispersão", "Gráfico de Área"),
-        "Gráfico de Linhas, Barras e Pizza": ("Gráfico de Linhas", "Gráfico de Barras", "Gráfico de Pizza"),
-        "Gráfico de Linhas, Barras e Dispersão": ("Gráfico de Linhas", "Gráfico de Barras", "Gráfico de Dispersão"),
-        "Gráfico de Linhas, Barras e Área": ("Gráfico de Linhas", "Gráfico de Barras", "Gráfico de Área"),
-        "Gráfico de Linhas, Pizza e Dispersão": ("Gráfico de Linhas", "Gráfico de Pizza", "Gráfico de Dispersão"),
-        "Gráfico de Linhas, Pizza e Área": ("Gráfico de Linhas", "Gráfico de Pizza", "Gráfico de Área"),
-        "Gráfico de Linhas, Dispersão e Área": ("Gráfico de Linhas", "Gráfico de Dispersão", "Gráfico de Área"),
-        "Gráfico de Barras, Pizza e Dispersão": ("Gráfico de Barras", "Gráfico de Pizza", "Gráfico de Dispersão"),
-        "Gráfico de Barras, Pizza e Área": ("Gráfico de Barras", "Gráfico de Pizza", "Gráfico de Área"),
-        "Gráfico de Barras, Dispersão e Área": ("Gráfico de Barras", "Gráfico de Dispersão", "Gráfico de Área"),
-        "Gráfico de Pizza, Dispersão e Área": ("Gráfico de Pizza", "Gráfico de Dispersão", "Gráfico de Área"),
-        "Gráfico de Linhas, Barras, Pizza e Dispersão": ("Gráfico de Linhas", "Gráfico de Barras", "Gráfico de Pizza", "Gráfico de Dispersão"),
-        "Gráfico de Linhas, Barras, Pizza e Área": ("Gráfico de Linhas", "Gráfico de Barras", "Gráfico de Pizza", "Gráfico de Área"),
-        "Gráfico de Linhas, Barras, Dispersão e Área": ("Gráfico de Linhas", "Gráfico de Barras", "Gráfico de Dispersão", "Gráfico de Área"),
-        "Gráfico de Linhas, Pizza, Dispersão e Área": ("Gráfico de Linhas", "Gráfico de Pizza", "Gráfico de Dispersão", "Gráfico de Área"),
-        "Gráfico de Barras, Pizza, Dispersão e Área": ("Gráfico de Barras", "Gráfico de Pizza", "Gráfico de Dispersão", "Gráfico de Área"),
-        "Todos os Gráficos": (
-            "Gráfico de Linhas", "Gráfico de Barras", "Gráfico de Pizza", "Gráfico de Dispersão", "Gráfico de Área",
-            "Gráfico de Linhas e Barras", "Gráfico de Linhas e Pizza", "Gráfico de Linhas e Dispersão", "Gráfico de Linhas e Área",
-            "Gráfico de Barras e Pizza", "Gráfico de Barras e Dispersão", "Gráfico de Barras e Área",
-            "Gráfico de Pizza e Dispersão", "Gráfico de Pizza e Área",
-            "Gráfico de Dispersão e Área",
-            "Gráfico de Linhas, Barras e Pizza", "Gráfico de Linhas, Barras e Dispersão", "Gráfico de Linhas, Barras e Área",
-            "Gráfico de Linhas, Pizza e Dispersão", "Gráfico de Linhas, Pizza e Área",
-            "Gráfico de Linhas, Dispersão e Área",
-            "Gráfico de Barras, Pizza e Dispersão", "Gráfico de Barras, Pizza e Área",
-            "Gráfico de Barras, Dispersão e Área",
-            "Gráfico de Pizza, Dispersão e Área",
-            "Gráfico de Linhas, Barras, Pizza e Dispersão",
-            "Gráfico de Linhas, Barras, Pizza e Área",
-            "Gráfico de Linhas, Barras, Dispersão e Área",
-            "Gráfico de Linhas, Pizza, Dispersão e Área",
-            "Gráfico de Barras, Pizza, Dispersão e Área",
-        )
+        "Gráfico de Linhas": False,
+        "Gráfico de Barras": False,
+        "Gráfico de Pizza": False,
+        "Gráfico de Dispersão": False,
+        "Gráfico de Área": False,
     }
-    # Opções de gráficos
-    opcao_grafico = st.selectbox("Selecione o tipo de gráfico:", opcoes_graficos)
+       # Dividir a tela em duas colunas
+    col3, col4 = st.columns([1, 1])
+    with col3:
+        st.sidebar.header("Filtros")
+        dados = carregar_dados()
 
-
-    # Verificar se a opção selecionada está no dicionário e chamar a função correspondente
-    if opcao_grafico in opcoes_graficos:
-        graficos = opcoes_graficos[opcao_grafico]
-        for grafico in graficos:
-            criar_grafico(jogadores, anos, site, nick, tamanho_field, intervalo_buyin, dia_semana, mes, tipo_de_torneio, tipo_de_duraçao, tipo_de_intervalo, moeda, rebuy, velocidade, grafico, dados)
-    else:
-        st.error("Opção de gráfico inválida.")
-
-
+        # Texto para instruir o usuário
+        st.header("Selecione o(s) jogador(es):")
         
+        # Lista para armazenar os jogadores selecionados
+        jogadores = []
+        # Número de colunas desejadas para os jogadores
+        num_colunas = 4
+        # Obter o número total de jogadores
+        num_jogadores = len(dados['Jogador'].unique())
+        # Calcular o número total de linhas necessárias
+        num_linhas = -(-num_jogadores // num_colunas)  # Arredondamento para cima da divisão
+        # Largura desejada para as imagens dos jogadores (em pixels)
+        largura_imagem = 100
+        # Exibir checkbox para cada jogador em um layout de várias colunas
+        for linha in range(num_linhas):
+            # Criar uma nova linha para os jogadores
+            colunas_jogadores = st.columns(num_colunas)
+            # Iterar sobre as colunas para exibir os jogadores
+            for coluna in range(num_colunas):
+                # Calcular o índice do jogador na lista de jogadores
+                jogador_index = linha * num_colunas + coluna
+                # Verificar se ainda há jogadores a serem exibidos
+                if jogador_index < num_jogadores:
+                    jogador = dados['Jogador'].unique()[jogador_index]
+                    # Carregar a imagem do jogador
+                    imagem_jogador = f'{jogador}.jpg'  # Exemplo: 'Avelange Jr.jpg' ou 'Dallastra.jpg'
+                    # Exibir a imagem do jogador e o checkbox lado a lado
+                    with colunas_jogadores[coluna]:
+                        st.image(imagem_jogador, width=largura_imagem)  # Largura da imagem
+                        if st.checkbox(jogador):
+                            jogadores.append(jogador)
+
+    # Adicionar checkbox para cada tipo de gráfico
+    with col4:
+        st.header("Opções de Gráficos Individuais")
+        for grafico in opcoes_graficos:
+            opcoes_graficos[grafico] = st.checkbox(grafico, False)
+
+        # Adicionar checkbox para selecionar todos os tipos de gráficos
+        todos_os_graficos = st.checkbox("Todos os Gráficos", False)
+
+    # Se "Todos os Gráficos" estiver selecionado, marcar todas as opções de gráficos
+    if todos_os_graficos:
+        for grafico in opcoes_graficos:
+            opcoes_graficos[grafico] = True
+
+        # Exibir os gráficos selecionados
+    for grafico, selecionado in opcoes_graficos.items():
+        if selecionado:
+            criar_grafico(jogadores, anos, site, nick, tamanho_field, intervalo_buyin, dia_semana, mes, tipo_de_torneio, tipo_de_duraçao, tipo_de_intervalo, moeda, rebuy, velocidade, grafico, dados)
+
+    # Definir todas as combinações possíveis de gráficos
+    opcoes_graficos2 = {
+        "Gráfico de Linhas": False,
+        "Gráfico de Barras": False,
+        "Gráfico de Pizza": False,
+        "Gráfico de Dispersão": False,
+        "Gráfico de Área": False,
+        "Todos os Gráficos": False  # Opção adicional para ver todos os gráficos ao mesmo tempo    
+    }
+    # Dividir a tela em duas colunas
+    col1, col2 = st.columns([1, 1])
+
+    # Adicionar o radio para selecionar o tipo de gráfico na primeira coluna
+    with col2:
+        st.header("Opções de Gráficos por Filtro")
+        opcao_selecionada = st.radio("Selecione o tipo de gráfico", list(opcoes_graficos2.keys()))
+
+    # Adicionar a seleção de jogadores na segunda coluna
+    with col1:
+        st.header("Selecione o(s) jogador(es):")
+        jogadores_selecionados = st.multiselect("Selecione o(s) jogador(es)", list(dados['Jogador'].unique()))
+
+
+        # Verificar se "Todos os Gráficos" foi selecionado
+    if opcao_selecionada == "Todos os Gráficos":
+        # Exibir todos os gráficos selecionados para os jogadores escolhidos
+        for jogador in jogadores_selecionados:
+            for grafico, _ in opcoes_graficos2.items():
+                criar_grafico_filtros([jogador], anos, site, nick, tamanho_field, intervalo_buyin, dia_semana, mes, tipo_de_torneio, tipo_de_duraçao, tipo_de_intervalo, moeda, rebuy, velocidade, grafico, dados)
+    else:
+        # Exibir o gráfico selecionado individualmente para os jogadores escolhidos
+        for jogador in jogadores_selecionados:
+            criar_grafico_filtros([jogador], anos, site, nick, tamanho_field, intervalo_buyin, dia_semana, mes, tipo_de_torneio, tipo_de_duraçao, tipo_de_intervalo, moeda, rebuy, velocidade, opcao_selecionada, dados)
+        
+
+    def exibir_metricas(jogadores, anos, site, nick, tamanho_field, intervalo_buyin, dia_semana, mes, tipo_de_torneio, tipo_de_duraçao, tipo_de_intervalo, moeda, rebuy, velocidade, dados):
+        # Filtrar os dados com base nos filtros selecionados
+        dados_filtrados = dados.copy()
+
+        filtros = {
+            'Jogador': jogadores,
+            'Ano': anos,
+            'Site': site,
+            'Nickname': nick,
+            'Tamanho do Field': tamanho_field,
+            'Intervalo de Buy in': intervalo_buyin,
+            'Dia da Semana': dia_semana,
+            'Mês': mes,
+            'Tipo de Torneio': tipo_de_torneio,
+            'Tipo de Duraçao': tipo_de_duraçao,
+            'Intervalo Horario': tipo_de_intervalo,
+            'Moeda': moeda,
+            'Rebuys': rebuy,
+            'Velocidade': velocidade
+        }
+
+        for coluna, valores in filtros.items():
+            if valores:
+                dados_filtrados = dados_filtrados[dados_filtrados[coluna].isin(valores)]
+
+        # Calcular a soma das métricas para cada jogador
+        metricas_sum = dados_filtrados.groupby('Jogador').agg({
+            'Prize USD': 'sum',
+            'Rake USD': 'sum',
+            'Stake USD': 'sum',
+            'Buy-in USD': 'sum',
+            'Profit USD': 'sum'
+        })
+
+         # Calcular o lucro médio (Profit USD Médio) para cada jogador
+        lucro_medio_por_jogador = dados_filtrados.groupby('Jogador')['Profit USD'].mean()
+        # Contar o número de torneios para cada jogador
+        num_torneios_por_jogador = dados_filtrados.groupby('Jogador').size()
+        # Calcular o valor médio de Buy-in USD para cada jogador
+        buy_in_usd_medio_por_jogador = metricas_sum['Buy-in USD'] / num_torneios_por_jogador
+
+        # Adicionar a coluna de valor médio de Buy-in USD ao DataFrame
+        metricas_sum['Buy in USD Médio'] = buy_in_usd_medio_por_jogador
+        # Adicionar as colunas de lucro médio e número de torneios ao DataFrame
+        metricas_sum['Profit USD Médio'] = lucro_medio_por_jogador
+        metricas_sum['Torneios'] = num_torneios_por_jogador
+        # Exibir os totais como DataFrame ocupando toda a largura da tela
+        st.write(metricas_sum, use_container_width=True)
+
+    # Outros filtros também podem ser definidos aqui...
+    dados = carregar_dados()  # Carregar os dados
+    st.header("Métricas:")
+    exibir_metricas(jogadores, anos, site, nick, tamanho_field, intervalo_buyin, dia_semana, mes, tipo_de_torneio, tipo_de_duraçao, tipo_de_intervalo, moeda, rebuy, velocidade, dados)
+
+
+
+
+
+
+
