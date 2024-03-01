@@ -12,6 +12,7 @@ def aplicar_filtros(dados, filtros):
     return dados_filtrados
 
 def criar_grafico_filtros(jogadores, anos, site, nick, tamanho_field, intervalo_buyin, dia_semana, mes, tipo_de_torneio, tipo_de_duraçao, tipo_de_intervalo, moeda, rebuy, velocidade, tipo_grafico, dados):
+
     # Criar filtro, incluindo o filtro de jogador
     filtros = {
         'Jogador': jogadores,
@@ -29,6 +30,7 @@ def criar_grafico_filtros(jogadores, anos, site, nick, tamanho_field, intervalo_
         'Rebuys': rebuy,
         'Velocidade': velocidade
     }
+
 
     # Aplicar filtros aos dados
     dados_filtrados = aplicar_filtros(dados, filtros)

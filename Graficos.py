@@ -1,6 +1,7 @@
 import plotly.express as px
 import streamlit as st
 import pandas as pd
+from Filtros import pagina_filtros
 
 def criar_grafico(jogadores, anos, site, nick, tamanho_field, intervalo_buyin, dia_semana, mes, tipo_de_torneio, tipo_de_duraçao, tipo_de_intervalo, moeda, rebuy, velocidade, tipo_grafico, dados):    
     # Filtrar os dados com base nos filtros selecionados

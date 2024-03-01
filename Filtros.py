@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from Graficos_filtro import criar_grafico_filtros
+from datetime import date
 @st.cache_data
 def carregar_dados():
     tabela = pd.read_csv("Avel_Dallastra.csv")
@@ -11,9 +11,7 @@ def pagina_filtros():
     st.sidebar.header("Filtros")
     dados = carregar_dados()
 
-
-    
-    # Filtrar os dados com base nos filtros selecionados
+    # Adicionar os demais filtros
     anos = st.sidebar.multiselect("Selecione o(s) ano(s)", sorted(dados['Ano'].unique()))
     site = st.sidebar.multiselect("Selecione o(s) site(s)", sorted(dados['Site'].unique()))
     nick = st.sidebar.multiselect("Selecione o(s) nickname(s)", sorted(dados['Nickname'].unique()))
@@ -28,8 +26,6 @@ def pagina_filtros():
     rebuy = st.sidebar.multiselect("Selecione a quantidade de rebuys)", [int(rebuy) for rebuy in dados['Rebuys'].unique()])
     velocidade = st.sidebar.multiselect("Selecione a(s) velocidade(s)", sorted(dados['Velocidade'].unique()))
 
-    # Retornar os filtros selecionados individualmente
     return anos, site, nick, tamanho_field, intervalo_buyin, dia_semana, mes, tipo_de_torneio, tipo_de_duraçao, tipo_de_intervalo, moeda, rebuy, velocidade
-
 
 
